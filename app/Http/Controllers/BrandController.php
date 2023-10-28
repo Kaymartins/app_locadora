@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreBrandRequest;
+use App\Http\Requests\UpdateBrandRequest;
 use App\Models\Brand;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+
 
 class BrandController extends Controller
 {
@@ -23,9 +26,17 @@ class BrandController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreBrandRequest $request)
     {
-        $brand = $this->brand->create($request->all());
+        $request->validated();
+        $brand_picture = $request->file('picture');
+        $brand_picture_urn = $brand_picture->store('images/brands', 'public');
+
+        $brand = $this->brand->create([
+            'name' => $request->name,
+            'picture' => $brand_picture_urn
+        ]);
+
         return response()->json($brand, 201);
     }
 
@@ -44,13 +55,36 @@ class BrandController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $id)
+    public function update(UpdateBrandRequest $request, $id)
     {
         $brand = $this->brand->find($id);
         if($brand === null){
             return response()->json(['error' => 'Could not update. Brand not found'], 404);
         }
-        $brand->update($request->all());
+
+        if($request->file('picture')){
+            Storage::disk('public')->delete($brand->picture);
+        }
+
+        if($request->method() === 'PATCH'){
+            $dynamicRules = [];
+            foreach($request->rules() as $input => $rule){
+                if(array_key_exists($input, $request->all())){
+                    $dynamicRules[$input] = $rule;
+                }
+            }
+            $request->validate($dynamicRules);
+        }else{
+            $brand->update($request->validated());
+        }
+
+        $brand_picture = $request->file('picture');
+        $brand_picture_urn = $brand_picture->store('images/brands', 'public');
+
+        $brand->update([
+            'picture' => $brand_picture_urn
+        ]);
+
         return response()->json($brand, 200);
     }
 
@@ -63,6 +97,9 @@ class BrandController extends Controller
         if($brand === null){
             return response()->json(['error' => 'Could not delete. Brand not found'], 404);
         }
+
+        Storage::disk('public')->delete($brand->picture);
+
         $brand->delete();
         return response()->json(['msg' => 'Brand deleted'],200);
     }
