@@ -9,6 +9,8 @@ class Type extends Model
 {
     use HasFactory;
 
+    protected $table = "types";
+
     protected $fillable = [
         'name',
         'picture',
@@ -23,6 +25,5 @@ class Type extends Model
     {
         return $this->belongsTo(Brand::class);
     }
-
 
 }

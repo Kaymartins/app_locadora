@@ -21,13 +21,15 @@ class StoreTypeRequest extends FormRequest
      */
     public function rules(): array
     {
+
         return [
             'name' => 'required|unique:types,name',
             'picture' => 'required|file|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'doors_number' => 'required|number|integer',
-            'seats_number' => 'required|number|integer',
+            'doors_number' => 'required|integer',
+            'seats_number' => 'required|integer',
             'air_bag' => 'required|boolean',
             'abs' => 'required|boolean',
+            'brand_id' => 'required|exists:brands,id',
         ];
     }
 }
